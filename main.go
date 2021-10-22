@@ -2,14 +2,13 @@ package main
 
 import (
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"time"
 )
-
-var numQuestions int
-var correctQuestions int
 
 func isError(err error) bool {
 	if err != nil {
@@ -19,22 +18,56 @@ func isError(err error) bool {
 	return (err != nil)
 }
 
+// These two functions work together to handle the quiz time limit
+
+// Start the timer, will send 'true' to specified channel once time is up
+func timer(timeout int, ch chan<- bool) {
+	time.AfterFunc(time.Duration(timeout)*time.Second, func() {
+		ch <- true
+	})
+}
+
+// Handle running out of time
+func outOfTime(timeout int, ch <-chan bool) {
+	<-ch
+	fmt.Println("\nTime's up!")
+	os.Exit(0)
+}
+
 func main() {
+	var filePath = flag.String("filepath", "problems.csv", "path to questions list")
+	var timeLimit = flag.Int("timelimit", 30, "time in seconds to answer all questions")
+	flag.Parse()
+
 	// intro stuff
 	fmt.Println("Welcome to the Gophercise Quiz!")
 	fmt.Println("Answer as many questions correctly before time runs out!")
+	fmt.Println("Questions path:", *filePath)
+	fmt.Printf("Time limit: %d seconds\n", *timeLimit)
 
 	fmt.Println("")
-	fmt.Println("Getting questions from problems.csv...")
+
+	fmt.Println("Press Enter when you're ready to play")
+	fmt.Scanln()
+
+	// init vars for score calculation
+	var numQuestions int
+	var correctQuestions int
+
+	// start the timer
+	var ch = make(chan bool)
+	go timer(*timeLimit, ch)
+	go outOfTime(*timeLimit, ch)
 
 	// read questions line-by-line
-	questions, err := os.Open("problems.csv")
+	questions, err := os.Open(*filePath)
 	if isError(err) {
 		log.Fatal(err)
 	}
 
 	r := csv.NewReader(questions)
 
+	// parse file line by line
 	for {
 		line, err := r.Read()
 		// we've reached end of file, stop reading
@@ -62,11 +95,8 @@ func main() {
 		}
 	}
 
-	// we've finished the quiz, let's count score
-	fmt.Println("Finished!")
-
 	// calculate score and display it
-	fmt.Printf("Out of %d questions, you answered %d correctly\n", numQuestions, correctQuestions)
+	fmt.Printf("%d of %d questions answered correctly\n", correctQuestions, numQuestions)
 	var score float32 = float32(correctQuestions) / float32(numQuestions) * 100
 	fmt.Printf("Your total score is %.2f\n", score)
 
