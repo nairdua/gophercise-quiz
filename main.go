@@ -101,10 +101,6 @@ func main() {
 		var question, answer string
 		question, answer = line[0], prepString(line[1])
 
-		// tidy up correct answer
-		answer = strings.ToLower(answer)   // convert to lowercase
-		answer = strings.TrimSpace(answer) // remove trailing/leading spaces
-
 		// display question
 		fmt.Printf("%s: ", question)
 
