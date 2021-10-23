@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+// init vars for score calculation
+var numQuestions int
+var correctQuestions int
+
 func isError(err error) bool {
 	if err != nil {
 		fmt.Println(err.Error())
@@ -33,6 +37,8 @@ func timer(timeout int, ch chan<- bool) {
 func outOfTime(timeout int, ch <-chan bool) {
 	<-ch
 	fmt.Println("\nTime's up!")
+	fmt.Printf("But you managed to answer %d questions correctly\n", correctQuestions)
+	fmt.Println("Better luck next time")
 	os.Exit(0)
 }
 
@@ -44,6 +50,13 @@ func prepString(s string) string {
 	result = strings.ReplaceAll(result, " ", "")
 
 	return result
+}
+
+func showResults() {
+	fmt.Printf("%d of %d questions answered correctly\n", correctQuestions, numQuestions)
+	var score float32 = float32(correctQuestions) / float32(numQuestions) * 100
+	fmt.Printf("Your total score is %.2f\n", score)
+	fmt.Printf("Thanks for playing!")
 }
 
 func main() {
@@ -61,10 +74,6 @@ func main() {
 
 	fmt.Println("Press Enter when you're ready to play")
 	fmt.Scanln()
-
-	// init vars for score calculation
-	var numQuestions int
-	var correctQuestions int
 
 	// start the timer
 	var ch = make(chan bool)
@@ -117,12 +126,9 @@ func main() {
 	}
 
 	// calculate score and display it
-	fmt.Printf("%d of %d questions answered correctly\n", correctQuestions, numQuestions)
-	var score float32 = float32(correctQuestions) / float32(numQuestions) * 100
-	fmt.Printf("Your total score is %.2f\n", score)
+	showResults()
 
 	// exit the program
-	fmt.Printf("Thanks for playing!\n")
 	os.Exit(0)
 
 	// something wrong happened
