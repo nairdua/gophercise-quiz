@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+type question struct {
+	text   string
+	answer string
+}
+
 // init vars for score calculation
 var numQuestions int
 var correctQuestions int
@@ -37,8 +42,8 @@ func timer(timeout int, ch chan<- bool) {
 func outOfTime(timeout int, ch <-chan bool) {
 	<-ch
 	fmt.Println("\nTime's up!")
-	fmt.Printf("But you managed to answer %d questions correctly\n", correctQuestions)
-	fmt.Println("Better luck next time")
+	showResults()
+	fmt.Println("Better luck next time!")
 	os.Exit(0)
 }
 
@@ -56,7 +61,36 @@ func showResults() {
 	fmt.Printf("%d of %d questions answered correctly\n", correctQuestions, numQuestions)
 	var score float32 = float32(correctQuestions) / float32(numQuestions) * 100
 	fmt.Printf("Your total score is %.2f\n", score)
-	fmt.Printf("Thanks for playing!")
+}
+
+// get questions
+func getQuestions(path string) []question {
+	var questions []question
+
+	file, err := os.Open(path)
+	if isError(err) {
+		log.Fatal(err)
+	}
+
+	reader := csv.NewReader(file)
+
+	for {
+		line, err := reader.Read()
+
+		if err == io.EOF {
+			break
+		} else if err != io.EOF {
+			if isError(err) {
+				log.Fatal(err)
+			}
+		}
+
+		var text, answer = line[0], prepString(line[1])
+		var question = question{text, answer}
+		questions = append(questions, question)
+	}
+
+	return questions
 }
 
 func main() {
@@ -81,45 +115,20 @@ func main() {
 	go outOfTime(*timeLimit, ch)
 
 	// read questions line-by-line
-	questions, err := os.Open(*filePath)
-	if isError(err) {
-		log.Fatal(err)
-	}
+	var questions = getQuestions(*filePath)
+	numQuestions = len(questions)
 
-	csvReader := csv.NewReader(questions)
-
-	// initialize input scanner. This one can handle spaces
+	// Loop through all questions
 	scanner := bufio.NewScanner(os.Stdin)
-
-	// parse file line by line
-	for {
-		line, err := csvReader.Read()
-		// we've reached end of file, stop reading
-		if err == io.EOF {
-			break
-		} else if err != io.EOF {
-			// something wrong happens
-			if isError(err) {
-				return
-			}
-		}
-
-		// increment one to number of questions
-		numQuestions = numQuestions + 1
-
-		var question, answer string
-		question, answer = line[0], prepString(line[1])
-
+	for _, question := range questions {
 		// display question
-		fmt.Printf("%s: ", question)
+		fmt.Printf("%s: ", question.text)
 
-		// receive answer
+		// wait for user input
 		if scanner.Scan() {
-			input := scanner.Text()
+			var input string = scanner.Text()
 			input = prepString(input)
-
-			if input == answer {
-				// if correct, add one to correctQuestions
+			if input == question.answer {
 				correctQuestions = correctQuestions + 1
 			}
 		}
@@ -129,10 +138,6 @@ func main() {
 	showResults()
 
 	// exit the program
+	fmt.Printf("Thanks for playing!\n")
 	os.Exit(0)
-
-	// something wrong happened
-	if isError(err) {
-		log.Fatal(err)
-	}
 }
