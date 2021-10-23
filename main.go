@@ -14,8 +14,8 @@ import (
 
 // struct to hold a question
 type question struct {
-	text   string `Text of the question, e.g. "1+1" or "Capital of Japan"`
-	answer string `Answer of the question, e.g. "2" or "Tokyo"`
+	text   string
+	answer string
 }
 
 // init vars for score calculation
