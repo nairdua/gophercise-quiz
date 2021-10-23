@@ -12,9 +12,10 @@ import (
 	"time"
 )
 
+// struct to hold a question
 type question struct {
-	text   string
-	answer string
+	text   string `Text of the question, e.g. "1+1" or "Capital of Japan"`
+	answer string `Answer of the question, e.g. "2" or "Tokyo"`
 }
 
 // init vars for score calculation
@@ -67,11 +68,13 @@ func showResults() {
 func getQuestions(path string) []question {
 	var questions []question
 
+	// try open file
 	file, err := os.Open(path)
 	if isError(err) {
 		log.Fatal(err)
 	}
 
+	// read file line by-line
 	reader := csv.NewReader(file)
 
 	for {
@@ -85,6 +88,7 @@ func getQuestions(path string) []question {
 			}
 		}
 
+		// parse each line and setup questions for the quiz
 		var text, answer = line[0], prepString(line[1])
 		var question = question{text, answer}
 		questions = append(questions, question)
