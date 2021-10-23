@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"encoding/csv"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -34,9 +36,19 @@ func outOfTime(timeout int, ch <-chan bool) {
 	os.Exit(0)
 }
 
+// Make a string easier to compare by removing all spaces and converting to lowercase
+func prepString(s string) string {
+	var result = s
+
+	result = strings.ToLower(result)
+	result = strings.ReplaceAll(result, " ", "")
+
+	return result
+}
+
 func main() {
-	var filePath = flag.String("filepath", "problems.csv", "path to questions list")
-	var timeLimit = flag.Int("timelimit", 30, "time in seconds to answer all questions")
+	var filePath = flag.String("file", "problems.csv", "path to questions list")
+	var timeLimit = flag.Int("time", 30, "time in seconds to answer all questions")
 	flag.Parse()
 
 	// intro stuff
@@ -65,11 +77,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r := csv.NewReader(questions)
+	csvReader := csv.NewReader(questions)
+
+	// initialize input scanner. This one can handle spaces
+	scanner := bufio.NewScanner(os.Stdin)
 
 	// parse file line by line
 	for {
-		line, err := r.Read()
+		line, err := csvReader.Read()
 		// we've reached end of file, stop reading
 		if err == io.EOF {
 			break
@@ -83,15 +98,25 @@ func main() {
 		// increment one to number of questions
 		numQuestions = numQuestions + 1
 
-		question, answer := line[0], line[1]
+		var question, answer string
+		question, answer = line[0], prepString(line[1])
+
+		// tidy up correct answer
+		answer = strings.ToLower(answer)   // convert to lowercase
+		answer = strings.TrimSpace(answer) // remove trailing/leading spaces
+
+		// display question
 		fmt.Printf("%s: ", question)
 
-		// receive answer and check if it's correct
-		var input string
-		fmt.Scanln(&input)
-		if input == answer {
-			// if correct, add one to correctQuestions
-			correctQuestions = correctQuestions + 1
+		// receive answer
+		if scanner.Scan() {
+			input := scanner.Text()
+			input = prepString(input)
+
+			if input == answer {
+				// if correct, add one to correctQuestions
+				correctQuestions = correctQuestions + 1
+			}
 		}
 	}
 
